@@ -12,19 +12,24 @@
     <div id="root"></div>
     
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
         function App() {
             const [fuelCost, setFuelCost] = useState('');
             const [distance, setDistance] = useState('');
             const [mileage, setMileage] = useState('');
+            const [isRoundtrip, setIsRoundtrip] = useState(false);
 
             const calculateFuelCost = () => {
                 if (!fuelCost || !distance || !mileage) return null;
                 
                 const costPerLiter = parseFloat(fuelCost);
-                const distanceKm = parseFloat(distance);
+                let distanceKm = parseFloat(distance);
                 const litersPer100km = parseFloat(mileage);
+                
+                if (isRoundtrip) {
+                    distanceKm *= 2;
+                }
                 
                 const fuelNeeded = (distanceKm * litersPer100km) / 100;
                 const totalCost = fuelNeeded * costPerLiter;
@@ -34,6 +39,27 @@
                     totalCost: totalCost.toFixed(2)
                 };
             };
+
+            useEffect(() => {
+                const savedData = sessionStorage.getItem('fuelcalc-data');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    setFuelCost(data.fuelCost || '');
+                    setDistance(data.distance || '');
+                    setMileage(data.mileage || '');
+                    setIsRoundtrip(data.isRoundtrip || false);
+                }
+            }, []);
+
+            useEffect(() => {
+                const data = {
+                    fuelCost,
+                    distance,
+                    mileage,
+                    isRoundtrip
+                };
+                sessionStorage.setItem('fuelcalc-data', JSON.stringify(data));
+            }, [fuelCost, distance, mileage, isRoundtrip]);
 
             const result = calculateFuelCost();
 
@@ -64,6 +90,15 @@
                                 onChange={(e) => setDistance(e.target.value)}
                                 placeholder="Enter distance in km"
                             />
+                            <div className="checkbox-group">
+                                <input
+                                    id="roundtrip"
+                                    type="checkbox"
+                                    checked={isRoundtrip}
+                                    onChange={(e) => setIsRoundtrip(e.target.checked)}
+                                />
+                                <label htmlFor="roundtrip" className="checkbox-label">Roundtrip (double distance)</label>
+                            </div>
                         </div>
 
                         <div className="input-group">
@@ -166,6 +201,25 @@
 
         input::placeholder {
             color: #aaa;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            margin-top: 0;
+        }
+
+        .checkbox-label {
+            font-weight: 400;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
         }
 
         .result {

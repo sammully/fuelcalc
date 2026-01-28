@@ -1,17 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles.css';
 
 function App() {
   const [fuelCost, setFuelCost] = useState('');
   const [distance, setDistance] = useState('');
   const [mileage, setMileage] = useState('');
+  const [isRoundtrip, setIsRoundtrip] = useState(false);
 
   const calculateFuelCost = () => {
     if (!fuelCost || !distance || !mileage) return null;
     
     const costPerLiter = parseFloat(fuelCost);
-    const distanceKm = parseFloat(distance);
+    let distanceKm = parseFloat(distance);
     const litersPer100km = parseFloat(mileage);
+    
+    if (isRoundtrip) {
+      distanceKm *= 2;
+    }
     
     const fuelNeeded = (distanceKm * litersPer100km) / 100;
     const totalCost = fuelNeeded * costPerLiter;
@@ -21,6 +26,27 @@ function App() {
       totalCost: totalCost.toFixed(2)
     };
   };
+
+  useEffect(() => {
+    const savedData = sessionStorage.getItem('fuelcalc-data');
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      setFuelCost(data.fuelCost || '');
+      setDistance(data.distance || '');
+      setMileage(data.mileage || '');
+      setIsRoundtrip(data.isRoundtrip || false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const data = {
+      fuelCost,
+      distance,
+      mileage,
+      isRoundtrip
+    };
+    sessionStorage.setItem('fuelcalc-data', JSON.stringify(data));
+  }, [fuelCost, distance, mileage, isRoundtrip]);
 
   const result = calculateFuelCost();
 
@@ -51,6 +77,15 @@ function App() {
             onChange={(e) => setDistance(e.target.value)}
             placeholder="Enter distance in km"
           />
+          <div className="checkbox-group">
+            <input
+              id="roundtrip"
+              type="checkbox"
+              checked={isRoundtrip}
+              onChange={(e) => setIsRoundtrip(e.target.checked)}
+            />
+            <label htmlFor="roundtrip" className="checkbox-label">Roundtrip (double distance)</label>
+          </div>
         </div>
 
         <div className="input-group">
